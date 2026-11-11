@@ -19,15 +19,15 @@ Lors d'un pic (annonce d'un transfert, sortie d'un nouveau maillot), des millier
 
 Pour la vente, on privilégie la **cohérence** (le « C » de CAP) : mieux vaut refuser une commande pendant quelques secondes que vendre un maillot qui n'existe pas.
 
-**La taille est modélisée dans le stock PostgreSQL**, pas seulement dans le catalogue : une ligne de `inventory.stock` = un maillot + une taille + un entrepôt (clé `sku` + `warehouse_id`). Ainsi :
-- la contrainte `CHECK (reserved <= on_hand)` empêche la survente, même si le code a un bug ;
+**La taille est modélisée dans le stock PostgreSQL**, pas seulement dans le catalogue : une ligne de `inventory.stock` = un maillot + une taille + un entrepôt (clé `sku` + `id_entrepot`). Ainsi :
+- la contrainte `CHECK (quantite_reservee <= quantite_physique)` empêche la survente, même si le code a un bug ;
 - deux achats simultanés de la dernière taille M se « disputent » la même ligne, et PostgreSQL les fait passer l'un après l'autre.
 
-Le **flocage** est une option de la ligne de commande (`flocking_name`, `flocking_number`) : il ne consomme pas de stock.
+Le **flocage** est une option de la ligne de commande (`flocage_nom`, `flocage_numero`) : il ne consomme pas de stock.
 
 ## Conséquences
 - (+) Intégrité garantie par la base, pas seulement par le code.
 - (+) Requêtes analytiques simples en SQL pour les premiers indicateurs.
-- (−) Plus de clé étrangère **entre** services : `product_id` et `order_id` doivent être vérifiés par le code (appel d'API).
+- (−) Plus de clé étrangère **entre** services : `id_produit` et `id_commande` doivent être vérifiés par le code (appel d'API).
 - (−) Plus de jointure entre services : afficher le nom du maillot dans une commande demande un appel au service Catalogue.
 - (−) Une seule instance : point unique de défaillance. **Plan B** : réplication en lecture (replica), et partitionnement de `orders.orders` par mois si le volume explose.

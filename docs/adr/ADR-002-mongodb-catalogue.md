@@ -23,8 +23,8 @@ Le catalogue est surtout **lu** (pages produit, recherche) et rarement modifié.
 ## Décision
 **MongoDB**, base `catalog`, collection `products`.
 - Les champs **communs** (nom, club, saison, type, version, prix en centimes, tailles) sont imposés par un **validateur JSON Schema** : on garde de la rigueur là où elle compte.
-- Le champ `attributes` est **libre** : chaque type de maillot y met ce qui lui est propre.
-- Le lien avec PostgreSQL passe par `product_id` (et `sku` = `product_id` + taille). Aucune des deux bases ne le vérifie : **c'est le code qui le fait**.
+- Le champ `attributs` est **libre** : chaque type de maillot y met ce qui lui est propre.
+- Le lien avec PostgreSQL passe par `id_produit` (et `sku` = `id_produit` + taille). Aucune des deux bases ne le vérifie : **c'est le code qui le fait**.
 
 Pour le catalogue, la **disponibilité** prime : afficher un prix vieux de quelques secondes est acceptable, une page produit qui ne charge pas pendant un pic ne l'est pas.
 
@@ -32,5 +32,5 @@ Pour le catalogue, la **disponibilité** prime : afficher un prix vieux de quelq
 - (+) Ajouter un nouveau type de maillot ne demande aucune migration.
 - (+) Index texte pour la recherche (« maillot Mbappé »).
 - (−) Deux bases à sauvegarder, surveiller et sécuriser.
-- (−) Risque d'incohérence : un `product_id` supprimé du catalogue mais encore présent dans le stock. **Parade** : on ne supprime jamais un produit, on le désactive (`is_active: false`).
+- (−) Risque d'incohérence : un `id_produit` supprimé du catalogue mais encore présent dans le stock. **Parade** : on ne supprime jamais un produit, on le désactive (`actif: false`).
 - **Plan B** : si MongoDB devient trop coûteux à opérer, passage à une colonne `JSONB` dans un schéma `catalog` PostgreSQL.
