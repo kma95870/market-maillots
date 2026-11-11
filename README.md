@@ -24,17 +24,18 @@ Plan détaillé : [docs/plan.md](docs/plan.md). Décisions d'architecture : [doc
                 │ schéma payments   paiements                           │
                 │ schéma auth       utilisateurs, rôles applicatifs     │
                 └───────────────────────────────────────────────────────┘
-                              ▲  lien par product_id / sku (vérifié par le code)
+                              ▲  lien par id_produit / sku (vérifié par le code) 
                               ▼
                 ┌──────────── MongoDB (catalog.products) ───────────────┐
-                │ un document = un maillot, champ "attributes" libre    │
+                │ un document = un maillot, champ "attributs" libre     │
                 └───────────────────────────────────────────────────────┘
 ```
 
 Règles :
 - un microservice ne lit **que son schéma** (rôle PostgreSQL dédié, testé : `orders_svc` reçoit `permission denied` sur `inventory`) ;
-- les montants sont en **centimes** ;
-- `sku` = `product_id` + taille, par exemple `PSG-2526-HOME-REP-M` ;
+- les noms de colonnes sont **en français** (sans accent) ;
+- les montants sont en **centimes d'euro** (une seule devise, donc pas de colonne devise) ;
+- `sku` = `id_produit` + taille, par exemple `PSG-2526-HOME-REP-M` ;
 - le flocage est une option de la ligne de commande et ne consomme pas de stock.
 
 ## Prérequis
@@ -77,13 +78,13 @@ Quelques requêtes pour vérifier :
 
 ```sql
 -- Les 5 maillots les plus vendus
-SELECT product_id, SUM(quantity) AS ventes
+SELECT id_produit, SUM(quantite) AS ventes
 FROM orders.order_lines GROUP BY 1 ORDER BY 2 DESC LIMIT 5;
 
 -- Taux de remplissage des entrepôts
-SELECT w.code, ROUND(100.0 * SUM(s.on_hand) / w.capacity_units, 1) AS remplissage_pct
-FROM inventory.stock s JOIN inventory.warehouses w USING (warehouse_id)
-GROUP BY w.code, w.capacity_units;
+SELECT w.ville, ROUND(100.0 * SUM(s.quantite_physique) / w.capacite, 1) AS remplissage_pct
+FROM inventory.stock s JOIN inventory.warehouses w USING (id_entrepot)
+GROUP BY w.ville, w.capacite;
 ```
 
 ### Vérifier les index (EXPLAIN)

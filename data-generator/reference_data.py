@@ -60,18 +60,19 @@ TECHNOLOGIES = {"Nike": "Dri-FIT ADV", "Adidas": "HEAT.RDY", "Puma": "ultraweave
                 "New Balance": "NB Dry"}
 
 WAREHOUSES = [
-    # id, code, ville, capacité (nombre de maillots)
-    (1, "PAR-01", "Paris (Gonesse)", 12000),
-    (2, "LYS-01", "Lyon (Saint-Priest)", 11000),
-    (3, "MRS-01", "Marseille (Vitrolles)", 10500),
-    (4, "LIL-01", "Lille (Lesquin)", 9200),
+    # id, ville, capacité (nombre de maillots)
+    (1, "Paris (Gonesse)", 12000),
+    (2, "Lyon (Saint-Priest)", 11000),
+    (3, "Marseille (Vitrolles)", 10500),
+    (4, "Lille (Lesquin)", 9200),
 ]
 
-# Comptes applicatifs de démonstration : (identifiant, rôles, compte technique ?)
+# Comptes applicatifs de démonstration : (email, rôles)
+# Les comptes techniques sont reconnus à leur rôle service_account.
 DEMO_USERS = [
-    ("admin", ["admin"], False),
-    ("lea.analyst", ["analyst"], False),
-    ("karim.catalog", ["catalog_manager"], False),
-    ("nora.logistics", ["logistics"], False),
-    ("svc-orders", ["service_account"], True),
+    ("admin@maillots.example", ["admin"]),
+    ("lea.analyst@maillots.example", ["analyst"]),
+    ("karim.catalog@maillots.example", ["catalog_manager"]),
+    ("nora.logistics@maillots.example", ["logistics"]),
+    ("svc-orders@maillots.example", ["service_account"]),
 ]

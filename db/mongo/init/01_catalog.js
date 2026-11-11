@@ -4,7 +4,7 @@
 //
 // Pourquoi un "validator" alors que MongoDB est sans schéma ?
 // -> On impose les champs COMMUNS à tous les maillots (nom, club, prix...)
-//    et on laisse le champ "attributes" totalement libre : c'est là que
+//    et on laisse le champ "attributs" totalement libre : c'est là que
 //    vont les caractéristiques propres à chaque type de maillot.
 // =====================================================================
 
@@ -22,38 +22,37 @@ catalog.createCollection("products", {
   validator: {
     $jsonSchema: {
       bsonType: "object",
-      required: ["product_id", "name", "club", "season", "kit_type", "version",
-                 "audience", "brand", "price_cents", "sizes", "is_active"],
+      required: ["id_produit", "nom", "club", "saison", "type_maillot", "version",
+                 "marque", "prix_centimes", "tailles", "actif"],
       properties: {
-        product_id:  { bsonType: "string", description: "Identifiant partagé avec PostgreSQL" },
-        name:        { bsonType: "string" },
+        id_produit:    { bsonType: "string", description: "Identifiant partagé avec PostgreSQL" },
+        nom:           { bsonType: "string" },
         club: {
           bsonType: "object",
-          required: ["code", "name", "league", "country"],
+          required: ["code", "nom", "championnat", "pays"],
           properties: {
-            code:    { bsonType: "string" },
-            name:    { bsonType: "string" },
-            league:  { bsonType: "string" },
-            country: { bsonType: "string" },
+            code:        { bsonType: "string" },
+            nom:         { bsonType: "string" },
+            championnat: { bsonType: "string" },
+            pays:        { bsonType: "string" },
           },
         },
-        season:      { bsonType: "string", pattern: "^[0-9]{4}/[0-9]{2}$" },
-        kit_type:    { enum: ["home", "away", "third", "goalkeeper", "retro"] },
-        version:     { enum: ["replica", "authentic"] },
-        audience:    { enum: ["adult", "kid"] },
-        brand:       { bsonType: "string" },
-        price_cents: { bsonType: "int", minimum: 0, description: "Prix en centimes" },
-        sizes:       { bsonType: "array", minItems: 1, items: { bsonType: "string" } },
-        flocking: {
+        saison:        { bsonType: "string", pattern: "^[0-9]{4}/[0-9]{2}$" },
+        type_maillot:  { enum: ["home", "away", "third", "goalkeeper", "retro"] },
+        version:       { enum: ["replica", "authentic"] },
+        marque:        { bsonType: "string" },
+        prix_centimes: { bsonType: "int", minimum: 0, description: "Prix en centimes d'euro" },
+        tailles:       { bsonType: "array", minItems: 1, items: { bsonType: "string" } },
+        flocage: {
           bsonType: "object",
           properties: {
-            available:   { bsonType: "bool" },
-            price_cents: { bsonType: "int", minimum: 0 },
-            players:     { bsonType: "array" },
+            disponible:    { bsonType: "bool" },
+            prix_centimes: { bsonType: "int", minimum: 0 },
+            joueurs:       { bsonType: "array" },
           },
         },
-        attributes:  { bsonType: "object", description: "Libre : dépend du type de maillot" },
-        is_active:   { bsonType: "bool" },
+        attributs:     { bsonType: "object", description: "Libre : dépend du type de maillot" },
+        actif:         { bsonType: "bool" },
       },
     },
   },
@@ -62,9 +61,9 @@ catalog.createCollection("products", {
 });
 
 // Index : ce qui accélère les recherches les plus fréquentes
-catalog.products.createIndex({ product_id: 1 }, { unique: true });
-catalog.products.createIndex({ "club.code": 1, season: -1 });
-catalog.products.createIndex({ kit_type: 1, version: 1 });
-catalog.products.createIndex({ name: "text", "club.name": "text" }); // recherche plein texte
+catalog.products.createIndex({ id_produit: 1 }, { unique: true });
+catalog.products.createIndex({ "club.code": 1, saison: -1 });
+catalog.products.createIndex({ type_maillot: 1, version: 1 });
+catalog.products.createIndex({ nom: "text", "club.nom": "text" }); // recherche plein texte
 
 print(`Catalogue initialisé dans la base "${dbName}"`);

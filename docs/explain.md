@@ -13,10 +13,10 @@ Script : [`db/postgres/queries/explain.sql`](../db/postgres/queries/explain.sql)
 
 | # | Usage (onglet) | Index utilisé | Plan | Temps |
 |---|---|---|---|---|
-| Q1 | 50 dernières commandes (Commandes) | `idx_orders_created_at` | Index Scan | 0,17 ms |
-| Q2 | Historique d'un client | `idx_orders_customer` | Bitmap Index Scan | 0,11 ms |
-| Q3 | Stock d'un maillot (Catalogue) | `idx_stock_product` | Bitmap Index Scan | 0,08 ms |
-| Q4 | Ruptures imminentes (Logistique) | `idx_stock_low` (index partiel) | Bitmap Index Scan | 0,21 ms |
+| Q1 | 50 dernières commandes (Commandes) | `idx_commandes_cree_le` | Index Scan | 0,17 ms |
+| Q2 | Historique d'un client | `idx_commandes_client` | Bitmap Index Scan | 0,11 ms |
+| Q3 | Stock d'un maillot (Catalogue) | `idx_stock_produit` | Bitmap Index Scan | 0,08 ms |
+| Q4 | Ruptures imminentes (Logistique) | `idx_stock_bas` (index partiel) | Bitmap Index Scan | 0,21 ms |
 | Q5a | Acheteurs d'un sku, **sans index** | aucun | **Seq Scan**, 19 490 lignes lues pour rien | 1,57 ms |
 | Q5b | Même requête **avec index** | `idx_tmp_sku` | Bitmap Index Scan | 0,28 ms |
 

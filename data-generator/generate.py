@@ -36,64 +36,65 @@ NOW = datetime.now(timezone.utc).replace(microsecond=0)
 # 1. Catalogue (MongoDB)
 # ---------------------------------------------------------------------
 def build_catalog():
-    """Construit la liste des maillots. Chaque maillot a des 'attributes' différents."""
+    """Construit la liste des maillots. Chaque maillot a des 'attributs' différents."""
     products = []
     for code, name, league, country, brand, popularity, players in ref.CLUBS:
-        club = {"code": code, "name": name, "league": league, "country": country}
+        club = {"code": code, "nom": name, "championnat": league, "pays": country}
         season_tag = SEASON.replace("/", "")[2:]  # '2025/26' -> '2526'
-        flocking = {
-            "available": True,
-            "price_cents": ref.FLOCKING_PRICE_CENTS,
-            "players": [{"name": p, "number": n} for p, n in players],
+        flocage = {
+            "disponible": True,
+            "prix_centimes": ref.FLOCKING_PRICE_CENTS,
+            "joueurs": [{"nom": p, "numero": n} for p, n in players],
         }
 
-        def add(kit_type, version, audience, price_key, attributes, suffix):
-            sizes = ref.KID_SIZES if audience == "kid" else ref.ADULT_SIZES
+        def add(kit_type, version, audience, price_key, attributs, suffix):
+            # la cible (adulte ou enfant) se lit dans la liste des tailles
+            tailles = ref.KID_SIZES if audience == "kid" else ref.ADULT_SIZES
             products.append({
-                "product_id": f"{code}-{season_tag}-{suffix}",
-                "name": f"Maillot {kit_type_label(kit_type)} {name} {SEASON}"
-                        + (" - Authentic" if version == "authentic" else "")
-                        + (" - Enfant" if audience == "kid" else ""),
-                "club": club, "season": SEASON, "kit_type": kit_type,
-                "version": version, "audience": audience, "brand": brand,
-                "price_cents": ref.PRICES[price_key], "currency": "EUR",
-                "sizes": sizes, "flocking": flocking,
-                "attributes": attributes, "is_active": True,
+                "id_produit": f"{code}-{season_tag}-{suffix}",
+                "nom": f"Maillot {kit_type_label(kit_type)} {name} {SEASON}"
+                       + (" - Authentic" if version == "authentic" else "")
+                       + (" - Enfant" if audience == "kid" else ""),
+                "club": club, "saison": SEASON, "type_maillot": kit_type,
+                "version": version, "marque": brand,
+                "prix_centimes": ref.PRICES[price_key],
+                "tailles": tailles, "flocage": flocage,
+                "attributs": attributs, "actif": True,
                 "popularity": popularity * ref.KIT_WEIGHTS[suffix],
-                "release_date": (NOW - timedelta(days=random.randint(100, 140))).isoformat(),
+                "date_sortie": (NOW - timedelta(days=random.randint(100, 140))).date().isoformat(),
             })
 
         for kit in ("home", "away", "third"):
             add(kit, "replica", "adult", ("replica", "adult"),
-                {"fit": "regular", "material": "100% polyester recyclé"},
+                {"coupe": "regular", "matiere": "100% polyester recyclé"},
                 f"{kit.upper()}-REP")
         for kit in ("home", "away"):
             add(kit, "authentic", "adult", ("authentic", "adult"),
-                {"fit": "slim", "technology": ref.TECHNOLOGIES[brand],
-                 "match_details": "écusson thermocollé, coupe joueur"},
+                {"coupe": "slim", "technologie": ref.TECHNOLOGIES[brand],
+                 "details_match": "écusson thermocollé, coupe joueur"},
                 f"{kit.upper()}-AUTH")
         add("home", "replica", "kid", ("replica", "kid"),
-            {"fit": "regular", "includes_shorts": random.random() < 0.5},
+            {"coupe": "regular", "short_inclus": random.random() < 0.5},
             "HOME-KID")
         add("goalkeeper", "replica", "adult", ("goalkeeper", "adult"),
-            {"long_sleeves": True, "padded_elbows": random.random() < 0.3},
+            {"manches_longues": True, "coudes_rembourres": random.random() < 0.3},
             "GK-REP")
 
         if code in ref.RETRO:
             year, story = ref.RETRO[code]
             products.append({
-                "product_id": f"{code}-RETRO-{year}",
-                "name": f"Maillot rétro {name} {year}",
-                "club": club, "season": f"{year}/{str(year + 1)[2:]}",
-                "kit_type": "retro", "version": "replica", "audience": "adult",
-                "brand": "Copa", "price_cents": ref.PRICES[("retro", "adult")],
-                "currency": "EUR", "sizes": ref.ADULT_SIZES,
-                "flocking": {"available": False},
-                "attributes": {"original_year": year, "story": story,
-                               "material": "coton", "limited_edition": True,
-                               "units_produced": random.choice([500, 1000, 2000])},
-                "is_active": True, "popularity": popularity * ref.KIT_WEIGHTS["RETRO"],
-                "release_date": (NOW - timedelta(days=200)).isoformat(),
+                "id_produit": f"{code}-RETRO-{year}",
+                "nom": f"Maillot rétro {name} {year}",
+                "club": club, "saison": f"{year}/{str(year + 1)[2:]}",
+                "type_maillot": "retro", "version": "replica",
+                "marque": "Copa", "prix_centimes": ref.PRICES[("retro", "adult")],
+                "tailles": ref.ADULT_SIZES,
+                "flocage": {"disponible": False},
+                "attributs": {"annee_origine": year, "histoire": story,
+                              "matiere": "coton", "edition_limitee": True,
+                              "exemplaires_produits": random.choice([500, 1000, 2000])},
+                "actif": True, "popularity": popularity * ref.KIT_WEIGHTS["RETRO"],
+                "date_sortie": (NOW - timedelta(days=200)).date().isoformat(),
             })
     return products
 
@@ -112,8 +113,8 @@ def load_catalog(products):
     docs = []
     for p in products:
         doc = {k: v for k, v in p.items() if k != "popularity"}  # info interne au générateur
-        doc["created_at"] = NOW
-        doc["updated_at"] = NOW
+        doc["cree_le"] = NOW
+        doc["modifie_le"] = NOW
         docs.append(doc)
     coll.insert_many(docs)
     print(f"[mongo] {coll.count_documents({})} maillots dans le catalogue")
@@ -135,28 +136,27 @@ def reset_tables(cur):
     cur.execute("""
         TRUNCATE payments.payments, orders.order_lines, orders.orders, orders.customers,
                  inventory.reservations, inventory.stock, inventory.warehouses,
-                 auth.user_roles, auth.users CASCADE
+                 auth.user_roles, auth.users RESTART IDENTITY CASCADE
     """)
 
 
 def load_warehouses_and_stock(cur, products):
     cur.executemany(
-        "INSERT INTO inventory.warehouses (warehouse_id, code, city, capacity_units) VALUES (%s,%s,%s,%s)",
+        "INSERT INTO inventory.warehouses (id_entrepot, ville, capacite) VALUES (%s,%s,%s)",
         ref.WAREHOUSES)
     rows = []
     for p in products:
-        for size in p["sizes"]:
-            sku = f"{p['product_id']}-{size}"
+        for size in p["tailles"]:
+            sku = f"{p['id_produit']}-{size}"
             for wh_id, *_ in ref.WAREHOUSES:
                 base = max(4, p["popularity"] * ref.SIZE_WEIGHTS[size] / 10)
                 on_hand = max(0, int(random.gauss(base, base / 3)))
                 if random.random() < 0.04:       # quelques ruptures dès le départ
                     on_hand = 0
-                rows.append((sku, wh_id, p["product_id"], size, on_hand,
-                             max(3, int(base / 4))))
+                rows.append((sku, wh_id, p["id_produit"], size, on_hand))
     cur.executemany(
-        """INSERT INTO inventory.stock (sku, warehouse_id, product_id, size, on_hand, reorder_point)
-           VALUES (%s,%s,%s,%s,%s,%s)""", rows)
+        """INSERT INTO inventory.stock (sku, id_entrepot, id_produit, taille, quantite_physique)
+           VALUES (%s,%s,%s,%s,%s)""", rows)
     print(f"[postgres] {len(ref.WAREHOUSES)} entrepôts, {len(rows)} lignes de stock")
 
 
@@ -176,8 +176,8 @@ def load_customers(cur):
                      random.choices(clubs, weights)[0] if random.random() < 0.7 else None,
                      NOW - timedelta(days=random.randint(DAYS_OF_HISTORY, 900))))
     cur.executemany(
-        """INSERT INTO orders.customers (customer_id, email, first_name, last_name, country, city,
-                                         favorite_club, created_at)
+        """INSERT INTO orders.customers (id_client, email, prenom, nom, pays, ville,
+                                         club_prefere, cree_le)
            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""", rows)
     print(f"[postgres] {len(rows)} clients")
     return rows
@@ -212,22 +212,22 @@ def load_orders_and_payments(cur, customers, products):
                 p = random.choice(by_club[cust[6]])
             else:
                 p = random.choices(products, product_weights)[0]
-            size = random.choices(p["sizes"], [ref.SIZE_WEIGHTS[s] for s in p["sizes"]])[0]
+            size = random.choices(p["tailles"], [ref.SIZE_WEIGHTS[s] for s in p["tailles"]])[0]
             qty = random.choices([1, 2], [92, 8])[0]
             fl_name = fl_num = None
             fl_price = 0
-            if p["flocking"].get("available") and random.random() < 0.35:
+            if p["flocage"].get("disponible") and random.random() < 0.35:
                 if random.random() < 0.8:     # un joueur star
-                    players = p["flocking"]["players"]
+                    players = p["flocage"]["joueurs"]
                     # le premier joueur de la liste est la star du club
                     pl = random.choices(players, [3] + [1] * (len(players) - 1))[0]
-                    fl_name, fl_num = pl["name"], pl["number"]
+                    fl_name, fl_num = pl["nom"], pl["numero"]
                 else:                          # un nom personnalisé
                     fl_name, fl_num = fake.last_name().upper(), random.randint(1, 99)
-                fl_price = p["flocking"]["price_cents"]
-            total += qty * (p["price_cents"] + fl_price)
-            lines.append((order_id, line_no, p["product_id"], f"{p['product_id']}-{size}", size,
-                          qty, p["price_cents"], fl_name, fl_num, fl_price))
+                fl_price = p["flocage"]["prix_centimes"]
+            total += qty * (p["prix_centimes"] + fl_price)
+            lines.append((order_id, line_no, p["id_produit"], f"{p['id_produit']}-{size}", size,
+                          qty, p["prix_centimes"], fl_name, fl_num, fl_price))
 
         # Statut cohérent avec l'âge de la commande
         age = NOW - created
@@ -243,46 +243,41 @@ def load_orders_and_payments(cur, customers, products):
         else:
             status = random.choices(["DELIVERED", "RETURNED", "CANCELLED"], [93, 5, 2])[0]
 
-        orders.append((order_id, f"MLT-{created:%Y}-{i + 1:06d}", cust[0], status, total,
-                       random.choices(["web", "app"], [60, 40])[0], created,
+        orders.append((order_id, f"MLT-{created:%Y}-{i + 1:06d}", cust[0], status, total, created,
                        created + timedelta(minutes=random.randint(1, 600))))
 
         if status not in ("PENDING", "STOCK_RESERVED"):
-            fraud = round(random.betavariate(1.2, 12), 3)
             pay_status = ("REFUSED" if pay_refused else
                           "REFUNDED" if status == "RETURNED" else "CAPTURED")
             payments.append((uuid.uuid4(), order_id, total,
                              random.choices(["card", "paypal", "apple_pay"], [65, 20, 15])[0],
-                             pay_status,
-                             random.choice(["insufficient_funds", "suspected_fraud", "card_expired"])
-                             if pay_refused else None,
-                             fraud, created + timedelta(seconds=random.randint(5, 120))))
+                             pay_status, created + timedelta(seconds=random.randint(5, 120))))
 
     cur.executemany(
-        """INSERT INTO orders.orders (order_id, order_ref, customer_id, status, total_cents, channel,
-                                      created_at, updated_at)
-           VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""", orders)
+        """INSERT INTO orders.orders (id_commande, reference, id_client, statut, montant_total_centimes,
+                                      cree_le, modifie_le)
+           VALUES (%s,%s,%s,%s,%s,%s,%s)""", orders)
     cur.executemany(
-        """INSERT INTO orders.order_lines (order_id, line_no, product_id, sku, size, quantity,
-                     unit_price_cents, flocking_name, flocking_number, flocking_price_cents)
+        """INSERT INTO orders.order_lines (id_commande, num_ligne, id_produit, sku, taille, quantite,
+                     prix_unitaire_centimes, flocage_nom, flocage_numero, flocage_prix_centimes)
            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""", lines)
     cur.executemany(
-        """INSERT INTO payments.payments (payment_id, order_id, amount_cents, method, status,
-                                          refusal_reason, fraud_score, created_at)
-           VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""", payments)
+        """INSERT INTO payments.payments (id_paiement, id_commande, montant_centimes, moyen, statut, cree_le)
+           VALUES (%s,%s,%s,%s,%s,%s)""", payments)
     print(f"[postgres] {len(orders)} commandes, {len(lines)} lignes, {len(payments)} paiements")
 
 
 def load_users(cur):
     password = os.environ["SEED_USER_PASSWORD"].encode()
-    for username, roles, is_service in ref.DEMO_USERS:
+    for email, roles in ref.DEMO_USERS:
         pw_hash = bcrypt.hashpw(password, bcrypt.gensalt()).decode()
         cur.execute(
-            "INSERT INTO auth.users (username, password_hash, is_service) VALUES (%s,%s,%s) RETURNING user_id",
-            (username, pw_hash, is_service))
+            "INSERT INTO auth.users (email, mot_de_passe_hash) VALUES (%s,%s) RETURNING id",
+            (email, pw_hash))
         user_id = cur.fetchone()[0]
-        cur.executemany("INSERT INTO auth.user_roles (user_id, role_name) VALUES (%s,%s)",
-                        [(user_id, r) for r in roles])
+        cur.executemany(
+            "INSERT INTO auth.user_roles (id_utilisateur, id_role) SELECT %s, id FROM auth.roles WHERE nom = %s",
+            [(user_id, r) for r in roles])
     print(f"[postgres] {len(ref.DEMO_USERS)} utilisateurs de démo (mot de passe : SEED_USER_PASSWORD)")
 
 
