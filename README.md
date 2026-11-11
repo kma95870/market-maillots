@@ -86,6 +86,25 @@ FROM inventory.stock s JOIN inventory.warehouses w USING (warehouse_id)
 GROUP BY w.code, w.capacity_units;
 ```
 
+### Vérifier les index (EXPLAIN)
+
+```bash
+docker exec -i maillots-postgres psql -U admin -d maillots < db/postgres/queries/explain.sql
+```
+
+Résultats commentés : [docs/explain.md](docs/explain.md).
+
+### Sauvegarde et restauration
+
+Depuis **Git Bash** (installé avec Git pour Windows), à la racine du projet :
+
+```bash
+sh scripts/backup.sh                          # crée backups/<date>/ (PostgreSQL + MongoDB)
+sh scripts/restore.sh backups/<date>          # restaure tout depuis ce dossier
+```
+
+Test réalisé le 11/11/2026 : sauvegarde, puis suppression volontaire de 4 996 commandes, de tous les paiements et des 8 maillots du PSG, puis restauration. Résultat : 15 000 commandes, 14 991 paiements et 125 maillots retrouvés, et chaque schéma appartient toujours au compte de son service.
+
 ### Repartir de zéro
 
 Les scripts d'initialisation ne s'exécutent qu'au **premier** démarrage. Pour les rejouer :
@@ -101,6 +120,8 @@ docker compose up -d
 db/postgres/init/   scripts de création PostgreSQL (rôles, schémas, tables)
 db/mongo/init/      création de la collection catalogue et de son validateur
 data-generator/     générateur de fausses données (Python)
+db/postgres/queries/  requêtes EXPLAIN
+scripts/            sauvegarde et restauration
 docs/adr/           fiches de décision d'architecture (ADR)
 docs/plan.md        plan du projet
 services/           microservices (étape 2)
