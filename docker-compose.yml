@@ -1,0 +1,92 @@
+# Plateforme data "Maillots" : description de tous les conteneurs.
+#
+# Les services SANS "profiles" démarrent toujours (le socle : les bases).
+# Les services AVEC "profiles" ne démarrent que si on le demande, par exemple :
+#   docker compose --profile seed run --rm seed      -> remplit les bases
+# Les profils "api", "streaming", "lake" et "observability" arriveront aux étapes suivantes.
+# Objectif : ne jamais lancer toute la plateforme d'un coup sur un PC de 16 Go.
+
+name: maillots
+
+services:
+  # ---------------------------------------------------------------
+  # PostgreSQL : commandes, stock, paiements, authentification
+  # Un seul serveur, mais un schéma + un rôle par microservice.
+  # ---------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: maillots-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      ORDERS_DB_PASSWORD: ${ORDERS_DB_PASSWORD}
+      INVENTORY_DB_PASSWORD: ${INVENTORY_DB_PASSWORD}
+      PAYMENTS_DB_PASSWORD: ${PAYMENTS_DB_PASSWORD}
+      AUTH_DB_PASSWORD: ${AUTH_DB_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      # Les scripts de ce dossier s'exécutent au PREMIER démarrage uniquement
+      - ./db/postgres/init:/docker-entrypoint-initdb.d:ro
+      - ./db/postgres/backups:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  # ---------------------------------------------------------------
+  # MongoDB : le catalogue des maillots (caractéristiques variables)
+  # ---------------------------------------------------------------
+  mongo:
+    image: mongo:7
+    container_name: maillots-mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DB}
+      MONGO_DB: ${MONGO_DB}
+      MONGO_CATALOG_USER: ${MONGO_CATALOG_USER}
+      MONGO_CATALOG_PASSWORD: ${MONGO_CATALOG_PASSWORD}
+    command: ["--wiredTigerCacheSizeGB", "0.25"]
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongo_data:/data/db
+      - ./db/mongo/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  # ---------------------------------------------------------------
+  # Générateur de fausses données (lancé à la demande)
+  # ---------------------------------------------------------------
+  seed:
+    profiles: ["seed"]
+    build: ./data-generator
+    container_name: maillots-seed
+    env_file: .env
+    environment:
+      PG_HOST: postgres
+      MONGO_HOST: mongo
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+
+volumes:
+  pg_data:
+  mongo_data:

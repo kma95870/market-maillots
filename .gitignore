@@ -1,1 +1,19 @@
+# Secrets : le vrai .env ne doit JAMAIS être poussé
 .env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Données locales générées
+data/
+*.log
+
+# Éditeurs / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+db/postgres/backups/*.dump
